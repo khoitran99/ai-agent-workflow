@@ -8,13 +8,16 @@ A structured, phase-gated workflow for producing optimal software engineering ou
 
 1. [What Is This Workflow?](#what-is-this-workflow)
 2. [Why Should I Use It?](#why-should-i-use-it)
-3. [How Should I Use It?](#how-should-i-use-it)
+3. [Installation & Setup](#installation--setup)
+   - [Claude Code Setup](#claude-code-setup)
+   - [Codex Setup](#codex-setup)
+4. [How Should I Use It?](#how-should-i-use-it)
    - [Starting from an Empty Folder](#scenario-1-empty-folder--greenfield-project)
    - [Working on an Existing Codebase](#scenario-2-existing-codebase)
    - [Working Across Multiple Codebases](#scenario-3-multiple-existing-codebases)
-4. [Benefits and Drawbacks](#benefits-and-drawbacks)
-5. [Version A: Claude Code](#version-a-claude-code)
-6. [Version B: Codex (OpenAI)](#version-b-codex-openai)
+5. [Benefits and Drawbacks](#benefits-and-drawbacks)
+6. [Version A: Claude Code](#version-a-claude-code)
+7. [Version B: Codex (OpenAI)](#version-b-codex-openai)
 
 ---
 
@@ -64,6 +67,215 @@ This workflow eliminates all three failure modes by ensuring the agent always op
 **Vertical slices over horizontal layers.** Tasks decomposed as "do all the database work, then all the API work, then all the UI work" create blocking dependencies and integration risk. Vertical slices (thin cuts that touch all layers to deliver one behavior) enable parallel work and produce testable increments.
 
 **TDD as consistency insurance.** Test-driven development is the single most reliable technique for making agent output consistent. Tests define the contract; the agent fills the implementation. Without tests written first, the agent decides the contract implicitly — and often incorrectly.
+
+---
+
+## Installation & Setup
+
+### Claude Code Setup
+
+**Prerequisites**
+- Claude Code CLI installed. If not yet installed:
+  ```bash
+  npm install -g @anthropic-ai/claude-code
+  ```
+- A Claude account with an active plan (Pro or higher recommended for long sessions)
+- Git installed and configured
+
+**Step 1 — Clone the skills repository**
+
+The 5 skills are maintained by Matt Pocock in a public repository. Clone it somewhere permanent on your machine (outside your project folders):
+
+```bash
+git clone https://github.com/mattpocock/skills.git ~/claude-skills
+```
+
+**Step 2 — Register the skills with Claude Code**
+
+Claude Code loads custom slash commands from a `.claude/commands/` directory. You can register the skills at the global level (available in every project) or at the project level (available only in one repo).
+
+**Option A — Global (recommended): available in all projects**
+
+```bash
+mkdir -p ~/.claude/commands
+cp ~/claude-skills/grill-me.md ~/.claude/commands/grill-me.md
+cp ~/claude-skills/to-prd.md ~/.claude/commands/to-prd.md
+cp ~/claude-skills/to-issues.md ~/.claude/commands/to-issues.md
+cp ~/claude-skills/tdd.md ~/.claude/commands/tdd.md
+cp ~/claude-skills/improve-codebase-architecture.md ~/.claude/commands/improve-codebase-architecture.md
+```
+
+**Option B — Project-level: available only in the current repo**
+
+Run this from your project root:
+
+```bash
+mkdir -p .claude/commands
+cp ~/claude-skills/grill-me.md .claude/commands/grill-me.md
+cp ~/claude-skills/to-prd.md .claude/commands/to-prd.md
+cp ~/claude-skills/to-issues.md .claude/commands/to-issues.md
+cp ~/claude-skills/tdd.md .claude/commands/tdd.md
+cp ~/claude-skills/improve-codebase-architecture.md .claude/commands/improve-codebase-architecture.md
+```
+
+**Step 3 — Verify the skills are registered**
+
+Start a Claude Code session in any project:
+
+```bash
+claude
+```
+
+Type `/` in the prompt and confirm that the following commands appear in the autocomplete list:
+- `/grill-me`
+- `/to-prd`
+- `/to-issues`
+- `/tdd`
+- `/improve-codebase-architecture`
+
+**Step 4 — Create a CLAUDE.md file in your project (optional but recommended)**
+
+`CLAUDE.md` is read by Claude Code at the start of every session. Use it to persist project-level context so you do not have to re-explain conventions each time.
+
+Create it at your project root:
+
+```bash
+touch CLAUDE.md
+```
+
+Add content like:
+
+```markdown
+# Project Context
+
+## Tech Stack
+- Language: TypeScript
+- Framework: Next.js 14
+- Test runner: Vitest
+- Package manager: pnpm
+
+## Commands
+- Run tests: `pnpm test`
+- Start dev server: `pnpm dev`
+- Lint: `pnpm lint`
+
+## Conventions
+- All new modules must have a corresponding test file
+- PRDs live in `docs/prd-*.md`
+- Task lists live in `docs/tasks-*.md`
+```
+
+**Step 5 — Install the GitHub CLI (optional, for `/to-issues`)**
+
+The `/to-issues` skill can create GitHub Issues directly if the `gh` CLI is available:
+
+```bash
+# macOS
+brew install gh
+
+# Authenticate
+gh auth login
+```
+
+---
+
+### Codex Setup
+
+**Prerequisites**
+- An OpenAI account with access to Codex or ChatGPT (GPT-4o or higher recommended)
+- Optionally: the OpenAI Codex CLI if using terminal-based access
+
+**Step 1 — Install the Codex CLI (terminal access)**
+
+```bash
+npm install -g @openai/codex
+```
+
+Authenticate with your OpenAI API key:
+
+```bash
+export OPENAI_API_KEY=your_api_key_here
+```
+
+Add the export to your shell profile to persist it:
+
+```bash
+echo 'export OPENAI_API_KEY=your_api_key_here' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Step 2 — Create a skills folder for your system prompts**
+
+Since Codex does not have native slash commands, skills are stored as plain text files you paste into conversations:
+
+```bash
+mkdir -p ~/codex-skills
+```
+
+**Step 3 — Create a skill file for each phase**
+
+Create the following files. You can copy the content from the system prompts defined in [Version B: Codex](#version-b-codex-openai) below.
+
+```bash
+touch ~/codex-skills/grill-me.md
+touch ~/codex-skills/to-prd.md
+touch ~/codex-skills/to-issues.md
+touch ~/codex-skills/tdd.md
+touch ~/codex-skills/improve-codebase-architecture.md
+```
+
+Fill each file with the corresponding system prompt from the Codex section of this document. Once populated, your usage workflow is:
+
+```bash
+# Print a skill prompt so you can copy-paste it into a conversation
+cat ~/codex-skills/grill-me.md
+```
+
+**Step 4 — Create a Custom GPT (optional, for ChatGPT users)**
+
+If you use ChatGPT rather than the Codex CLI, you can embed the skill prompts into a Custom GPT so they are always available without copy-pasting:
+
+1. Go to [chatgpt.com](https://chatgpt.com) → **Explore GPTs** → **Create**
+2. In the **Instructions** field, paste the system prompts for all 5 skills, separated by headers
+3. Name it "AI Agent Workflow Assistant"
+4. Save and use it as your default GPT for all development sessions
+
+**Step 5 — Create a session anchor template**
+
+Because Codex does not retain state between conversations, create a reusable anchor template you paste at the start of every session:
+
+```bash
+cat > ~/codex-skills/session-anchor.md << 'EOF'
+## Session Context
+
+- Project: [project name]
+- Repository: [repo path or URL]
+- Feature in progress: [feature name]
+- Current phase: [Discovery / Definition / Planning / Execution]
+- Current task: [issue title or description]
+- PRD location: [paste inline or reference file]
+- Files in scope this session: [list relevant files]
+EOF
+```
+
+Fill in the brackets at the start of each session before pasting any skill prompt.
+
+---
+
+### Keeping Skills Up to Date
+
+Matt Pocock updates the skills repository periodically. To pull the latest versions:
+
+```bash
+cd ~/claude-skills && git pull
+
+# Re-copy updated files to Claude Code commands (if using global install)
+cp ~/claude-skills/grill-me.md ~/.claude/commands/grill-me.md
+cp ~/claude-skills/to-prd.md ~/.claude/commands/to-prd.md
+cp ~/claude-skills/to-issues.md ~/.claude/commands/to-issues.md
+cp ~/claude-skills/tdd.md ~/.claude/commands/tdd.md
+cp ~/claude-skills/improve-codebase-architecture.md ~/.claude/commands/improve-codebase-architecture.md
+```
 
 ---
 
