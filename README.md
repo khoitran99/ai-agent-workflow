@@ -80,64 +80,53 @@ This workflow eliminates all three failure modes by ensuring the agent always op
   npm install -g @anthropic-ai/claude-code
   ```
 - A Claude account with an active plan (Pro or higher recommended for long sessions)
-- Git installed and configured
+- Node.js 18+ and Git installed
 
-**Step 1 — Clone the skills repository**
+**Step 1 — Install the skills via the official installer**
 
-The 5 skills are maintained by Matt Pocock in a public repository. Clone it somewhere permanent on your machine (outside your project folders):
-
-```bash
-git clone https://github.com/mattpocock/skills.git ~/claude-skills
-```
-
-**Step 2 — Register the skills with Claude Code**
-
-Claude Code loads custom slash commands from a `.claude/commands/` directory. You can register the skills at the global level (available in every project) or at the project level (available only in one repo).
-
-**Option A — Global (recommended): available in all projects**
+The skills use `npx skills` — the official installer that lets you pick which skills to add and where to install them (globally or per-project):
 
 ```bash
-mkdir -p ~/.claude/commands
-cp ~/claude-skills/grill-me.md ~/.claude/commands/grill-me.md
-cp ~/claude-skills/to-prd.md ~/.claude/commands/to-prd.md
-cp ~/claude-skills/to-issues.md ~/.claude/commands/to-issues.md
-cp ~/claude-skills/tdd.md ~/.claude/commands/tdd.md
-cp ~/claude-skills/improve-codebase-architecture.md ~/.claude/commands/improve-codebase-architecture.md
+npx skills@latest add mattpocock/skills
 ```
 
-**Option B — Project-level: available only in the current repo**
+The interactive prompt will ask you:
+- Which skills to install (select all 5 from this workflow plus `/setup-matt-pocock-skills`)
+- Whether to install globally (`~/.claude/commands/`) or per-project (`.claude/commands/`)
 
-Run this from your project root:
+> **Global** makes the skills available in every project. **Per-project** scopes them to the current repo only. Choose global unless you want to keep this workflow isolated to one project.
 
-```bash
-mkdir -p .claude/commands
-cp ~/claude-skills/grill-me.md .claude/commands/grill-me.md
-cp ~/claude-skills/to-prd.md .claude/commands/to-prd.md
-cp ~/claude-skills/to-issues.md .claude/commands/to-issues.md
-cp ~/claude-skills/tdd.md .claude/commands/tdd.md
-cp ~/claude-skills/improve-codebase-architecture.md .claude/commands/improve-codebase-architecture.md
+**Step 2 — Run the one-time repo setup skill**
+
+`/setup-matt-pocock-skills` is a bootstrapper that configures the per-repo settings the other engineering skills depend on. Run it once inside every new project before using `/to-prd`, `/to-issues`, `/tdd`, or `/improve-codebase-architecture`:
+
 ```
+/setup-matt-pocock-skills
+```
+
+It will ask you:
+- Which issue tracker to use: **GitHub Issues**, GitLab, or local markdown files
+- What triage labels you use (for the `/triage` skill)
+- Where to save generated docs (e.g., `docs/`)
 
 **Step 3 — Verify the skills are registered**
 
-Start a Claude Code session in any project:
+Start a Claude Code session in your project:
 
 ```bash
 claude
 ```
 
-Type `/` in the prompt and confirm that the following commands appear in the autocomplete list:
+Type `/` and confirm the following commands appear in autocomplete:
 - `/grill-me`
 - `/to-prd`
 - `/to-issues`
 - `/tdd`
 - `/improve-codebase-architecture`
 
-**Step 4 — Create a CLAUDE.md file in your project (optional but recommended)**
+**Step 4 — Create a CLAUDE.md file in your project (recommended)**
 
 `CLAUDE.md` is read by Claude Code at the start of every session. Use it to persist project-level context so you do not have to re-explain conventions each time.
-
-Create it at your project root:
 
 ```bash
 touch CLAUDE.md
@@ -165,9 +154,7 @@ Add content like:
 - Task lists live in `docs/tasks-*.md`
 ```
 
-**Step 5 — Install the GitHub CLI (optional, for `/to-issues`)**
-
-The `/to-issues` skill can create GitHub Issues directly if the `gh` CLI is available:
+**Step 5 — Install the GitHub CLI (required for `/to-issues` with GitHub)**
 
 ```bash
 # macOS
@@ -264,18 +251,13 @@ Fill in the brackets at the start of each session before pasting any skill promp
 
 ### Keeping Skills Up to Date
 
-Matt Pocock updates the skills repository periodically. To pull the latest versions:
+Matt Pocock updates the skills repository periodically. Re-run the installer to pull the latest versions — it will overwrite existing skill files in place:
 
 ```bash
-cd ~/claude-skills && git pull
-
-# Re-copy updated files to Claude Code commands (if using global install)
-cp ~/claude-skills/grill-me.md ~/.claude/commands/grill-me.md
-cp ~/claude-skills/to-prd.md ~/.claude/commands/to-prd.md
-cp ~/claude-skills/to-issues.md ~/.claude/commands/to-issues.md
-cp ~/claude-skills/tdd.md ~/.claude/commands/tdd.md
-cp ~/claude-skills/improve-codebase-architecture.md ~/.claude/commands/improve-codebase-architecture.md
+npx skills@latest add mattpocock/skills
 ```
+
+Select the same skills as before and confirm the install location. The installer handles the update atomically; no manual file copying is needed.
 
 ---
 
